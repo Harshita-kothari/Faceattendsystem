@@ -1847,7 +1847,29 @@ function roleMiddleware(...roles) {
 }
 
 const app = express()
-app.use(cors({ origin: env.clientUrl, credentials: true }))
+const allowedOrigins = new Set([
+  env.clientUrl,
+  'http://127.0.0.1:5173',
+  'http://localhost:5173',
+])
+
+function isAllowedOrigin(origin = '') {
+  if (!origin) return true
+  if (allowedOrigins.has(origin)) return true
+  return /^https:\/\/.*\.(vercel\.app|netlify\.app)$/.test(origin)
+}
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true)
+      }
+      return callback(new Error('CORS origin not allowed'))
+    },
+    credentials: true,
+  }),
+)
 app.use(express.json({ limit: '25mb' }))
 app.use(morgan('dev'))
 

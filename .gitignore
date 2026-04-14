@@ -26,6 +26,9 @@ response.txt
 server/.env
 face-api/.env
 client/.env
+client/.gitignore
+.vercel/
+client/.vercel/
 
 server/data/*.json
 face-api/data/*.json
