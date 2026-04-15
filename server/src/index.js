@@ -126,6 +126,14 @@ function generateOtpCode() {
   return String(Math.floor(100000 + Math.random() * 900000))
 }
 
+async function warmFaceApi() {
+  try {
+    await axios.get(`${env.faceApiUrl}/health`, { timeout: 30000 })
+  } catch {
+    // Let the actual request/retry path handle the failure details.
+  }
+}
+
 async function dispatchEmail({ to, subject, html, text }) {
   if (!to) {
     return { status: 'failed', detail: 'Recipient email is required.' }
@@ -1927,6 +1935,9 @@ app.post('/api/auth/signup', async (req, res) => {
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {
+          if (attempt === 1) {
+            await warmFaceApi()
+          }
           response = await axios.post(`${env.faceApiUrl}/register-face`, {
             userId: user.id,
             name: user.name,
@@ -1934,7 +1945,7 @@ app.post('/api/auth/signup', async (req, res) => {
             role: user.role,
             images: faceImages,
           }, {
-            timeout: 45000,
+            timeout: 90000,
           })
           break
         } catch (error) {
@@ -1944,6 +1955,7 @@ app.post('/api/auth/signup', async (req, res) => {
           if (!shouldRetry || attempt === 3) {
             throw error
           }
+          await warmFaceApi()
           await new Promise((resolve) => setTimeout(resolve, attempt * 2500))
         }
       }

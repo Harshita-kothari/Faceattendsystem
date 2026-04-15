@@ -44,10 +44,12 @@ export function FaceCapture({ onFramesChange, maxFrames = 5, label = 'Capture fa
       return
     }
     const canvas = canvasRef.current
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    const maxWidth = 960
+    const scale = Math.min(1, maxWidth / Math.max(video.videoWidth || maxWidth, 1))
+    canvas.width = Math.max(320, Math.round((video.videoWidth || maxWidth) * scale))
+    canvas.height = Math.max(320, Math.round((video.videoHeight || maxWidth) * scale))
     canvas.getContext('2d').drawImage(video, 0, 0)
-    const image = canvas.toDataURL('image/jpeg', 0.85)
+    const image = canvas.toDataURL('image/jpeg', 0.72)
     const nextFrames = [...frames, image].slice(0, maxFrames)
     setFrames(nextFrames)
     onFramesChange?.(nextFrames)
