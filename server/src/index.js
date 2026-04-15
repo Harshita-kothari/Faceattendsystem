@@ -1922,13 +1922,35 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     if (role === 'student' && faceImages.length) {
-      const response = await axios.post(`${env.faceApiUrl}/register-face`, {
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        images: faceImages,
-      })
+      let response
+      let lastError
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          response = await axios.post(`${env.faceApiUrl}/register-face`, {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            images: faceImages,
+          }, {
+            timeout: 45000,
+          })
+          break
+        } catch (error) {
+          lastError = error
+          const status = error.response?.status
+          const shouldRetry = !status || status >= 500
+          if (!shouldRetry || attempt === 3) {
+            throw error
+          }
+          await new Promise((resolve) => setTimeout(resolve, attempt * 2500))
+        }
+      }
+
+      if (!response && lastError) {
+        throw lastError
+      }
       user.faceRegistered = Boolean(response.data?.success)
       user.faceSamples = faceImages.map((imageUrl) => ({ imageUrl, capturedAt: new Date().toISOString() }))
     }
