@@ -1,0 +1,11 @@
+{
+  "appId": "com.harshita.faceattendancemanager",
+  "appName": "Attendance Management System",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://69e0ba93f0d0725a932d3f80--faceattendancemanager.netlify.app/",
+    "cleartext": false,
+    "androidScheme": "https"
+  }
+}
