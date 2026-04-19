@@ -264,13 +264,15 @@ def register_face():
 
     existing_profiles = read_profiles()
     owner_profile, owner_stats = find_face_owner(vectors, existing_profiles, user_id, email.lower())
+    minimum_strong_matches = max(1, min(2, len(vectors)))
     duplicate_detected = (
         owner_profile is not None
         and (
-            owner_stats["best_score"] >= 0.89
+            owner_stats["best_score"] >= 0.84
+            or owner_stats["average_best_score"] >= 0.8
             or (
-                owner_stats["average_best_score"] >= 0.82
-                and owner_stats["strong_match_count"] >= max(1, min(2, len(vectors)))
+                owner_stats["average_best_score"] >= 0.76
+                and owner_stats["strong_match_count"] >= minimum_strong_matches
             )
         )
     )
