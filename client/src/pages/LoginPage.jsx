@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
+import { getPhoneValidationMessage, isValidPhoneNumber, normalizePhoneInput } from '../lib/validation'
 
 export function LoginPage() {
   const { login, loading } = useAuth()
@@ -61,6 +62,10 @@ export function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     try {
+      if (selectedRole === 'student' && !isValidPhoneNumber(form.parentPhone)) {
+        toast.error(getPhoneValidationMessage('Parent phone'))
+        return
+      }
       if (otpChallengeId && selectedRole === 'student' && faceRequired && !capturedFace) {
         toast.error('Face capture is required to complete student login.')
         return
@@ -84,7 +89,8 @@ export function LoginPage() {
       toast.success(`Welcome back, ${user.name}`)
       navigate(user.role === 'admin' ? '/admin' : user.role === 'teacher' ? '/teacher' : '/student')
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed')
+      const message = error.response?.data?.message || error.friendlyMessage || 'Login failed'
+      toast.error(message)
     }
   }
 
@@ -109,7 +115,7 @@ export function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),_transparent_38%),linear-gradient(135deg,rgba(15,23,42,0.1),transparent_40%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.09),_transparent_35%),linear-gradient(135deg,rgba(2,6,23,0.3),transparent_45%)]" />
       </div>
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-6xl">
-        <div className="grid overflow-hidden rounded-[2rem] border border-white/10 bg-white/80 shadow-2xl shadow-blue-950/10 backdrop-blur dark:bg-slate-950/75 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/80 shadow-2xl shadow-blue-950/10 backdrop-blur dark:bg-slate-950/75 sm:rounded-[2rem] lg:grid-cols-[1.1fr_0.9fr]">
           <div className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:block">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.22),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.14),_transparent_28%)]" />
             <motion.div
@@ -171,12 +177,26 @@ export function LoginPage() {
               </div>
             </div>
           </div>
-          <div className="p-6 sm:p-10">
+          <div className="p-4 sm:p-6 lg:p-10">
             <div className="mx-auto max-w-xl">
+            <div className="mb-4 rounded-[1.5rem] border border-white/10 bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/20 lg:hidden">
+              <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200/70">Production-ready</p>
+              <h1 className="mt-3 text-3xl font-semibold leading-tight">Attendance Management System</h1>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                Face-recognition sign-in, live attendance, parent alerts, and role-based dashboards in one mobile-friendly workspace.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {['Face login', 'Geo-fence', 'AI summaries'].map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-200">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Welcome back</p>
-                <h2 className="mt-3 text-4xl font-semibold">Sign in</h2>
+                <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Sign in</h2>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Use your teacher, student, or admin account to continue.</p>
               </div>
               <div className="hidden rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-600 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300 sm:flex sm:items-center sm:gap-2">
@@ -219,7 +239,7 @@ export function LoginPage() {
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Control teacher attendance, admin analytics, and institution access.</p>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-[1.75rem] border border-slate-200/80 bg-white/60 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/40">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-white/60 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/40 sm:rounded-[1.75rem] sm:p-5">
               <input className="field" placeholder="Email address" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
               <div className="field flex items-center gap-3">
                 <input className="w-full bg-transparent outline-none" placeholder="Password" type={showPassword ? 'text' : 'password'} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
@@ -230,12 +250,12 @@ export function LoginPage() {
                   <input className="field" placeholder="Parent email for alerts" type="email" required value={form.parentEmail} onChange={(event) => setForm({ ...form, parentEmail: event.target.value })} />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <input className="field" placeholder="Parent name" value={form.parentName} onChange={(event) => setForm({ ...form, parentName: event.target.value })} />
-                    <input className="field" placeholder="Parent phone" value={form.parentPhone} onChange={(event) => setForm({ ...form, parentPhone: event.target.value })} />
+                    <input className="field" placeholder="Parent phone" inputMode="tel" value={form.parentPhone} onChange={(event) => setForm({ ...form, parentPhone: normalizePhoneInput(event.target.value) })} />
                   </div>
                 </>
               ) : null}
               {otpChallengeId ? (
-                <div className="space-y-3 rounded-[1.5rem] border border-blue-200 bg-blue-50/70 p-4 text-sm dark:border-blue-900/60 dark:bg-blue-950/30">
+                  <div className="space-y-3 rounded-[1.5rem] border border-blue-200 bg-blue-50/70 p-4 text-sm dark:border-blue-900/60 dark:bg-blue-950/30">
                   <p className="font-medium">OTP verification required</p>
                   <p className="text-slate-500 dark:text-slate-400">Code sent to {otpSentTo}. Enter the 6-digit OTP to complete login.</p>
                   <input
@@ -254,23 +274,23 @@ export function LoginPage() {
                         This account already has a registered face profile, so login will only complete after the same student's face is verified.
                       </p>
                       <div className="overflow-hidden rounded-[1.25rem] bg-slate-950">
-                        <video ref={videoRef} className="h-56 w-full object-cover" playsInline muted />
+                        <video ref={videoRef} className="h-60 w-full object-cover sm:h-56" playsInline muted />
                       </div>
                       {capturedFace ? <img src={capturedFace} alt="Captured login face" className="h-28 w-28 rounded-[1rem] object-cover" /> : null}
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                         {cameraActive ? (
                           <>
-                            <button type="button" onClick={captureFace} className="action-primary">
+                            <button type="button" onClick={captureFace} className="action-primary w-full justify-center sm:w-auto">
                               <Camera size={16} />
                               Capture face
                             </button>
-                            <button type="button" onClick={stopCamera} className="action-secondary">
+                            <button type="button" onClick={stopCamera} className="action-secondary w-full justify-center sm:w-auto">
                               <Square size={16} />
                               Stop
                             </button>
                           </>
                         ) : (
-                          <button type="button" onClick={startCamera} className="action-primary">
+                          <button type="button" onClick={startCamera} className="action-primary w-full justify-center sm:w-auto">
                             <Camera size={16} />
                             Start camera
                           </button>

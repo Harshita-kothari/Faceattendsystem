@@ -83,8 +83,20 @@ def vectorize(face):
 def similarity(face_a, face_b):
     vec_a = np.array(face_a, dtype="float32")
     vec_b = np.array(face_b, dtype="float32")
-    cosine = float(np.dot(vec_a, vec_b) / ((np.linalg.norm(vec_a) * np.linalg.norm(vec_b)) + 1e-6))
-    return max(0.0, min(1.0, (cosine + 1.0) / 2.0))
+    hist_len = 64
+    pixel_a = vec_a[hist_len:]
+    pixel_b = vec_b[hist_len:]
+    if pixel_a.size == 0 or pixel_b.size == 0:
+        return 0.0
+    mse = float(np.mean(np.square(pixel_a - pixel_b)))
+    rmse = float(np.sqrt(mse))
+    return max(0.0, min(1.0, 1.0 - rmse))
+
+
+def profile_best_score(candidate_vector, saved_vectors):
+    if not saved_vectors:
+        return 0.0
+    return max(similarity(candidate_vector, saved_vector) for saved_vector in saved_vectors)
 
 
 def profile_match_stats(vectors, saved_vectors):
@@ -103,7 +115,7 @@ def profile_match_stats(vectors, saved_vectors):
             "strong_match_count": 0,
         }
 
-    strong_match_count = sum(1 for score in candidate_best_scores if score >= 0.92)
+    strong_match_count = sum(1 for score in candidate_best_scores if score >= 0.86)
     return {
         "best_score": max(candidate_best_scores),
         "average_best_score": float(sum(candidate_best_scores) / len(candidate_best_scores)),
@@ -141,6 +153,17 @@ def find_face_owner(vectors, profiles, exclude_user_id=None, exclude_email=""):
             best_profile = profile
             best_stats = stats
     return best_profile, best_stats
+
+
+def build_profile_response(profile, score):
+    return {
+        "matched": True,
+        "userId": profile["userId"],
+        "name": profile["name"],
+        "email": profile.get("email", ""),
+        "role": profile.get("role", ""),
+        "confidence": round(score, 2),
+    }
 
 
 def analyze_engagement(face):
@@ -243,9 +266,13 @@ def register_face():
     owner_profile, owner_stats = find_face_owner(vectors, existing_profiles, user_id, email.lower())
     duplicate_detected = (
         owner_profile is not None
-        and owner_stats["best_score"] >= 0.96
-        and owner_stats["average_best_score"] >= 0.91
-        and owner_stats["strong_match_count"] >= max(2, min(3, len(vectors)))
+        and (
+            owner_stats["best_score"] >= 0.89
+            or (
+                owner_stats["average_best_score"] >= 0.82
+                and owner_stats["strong_match_count"] >= max(1, min(2, len(vectors)))
+            )
+        )
     )
     if duplicate_detected:
         return (
@@ -311,57 +338,68 @@ def recognize_face():
             None,
         )
         if expected_profile:
-            expected_scores = [similarity(candidate, vector) for vector in expected_profile.get("vectors", [])]
-            expected_score = max(expected_scores) if expected_scores else 0.0
+            expected_score = profile_best_score(candidate, expected_profile.get("vectors", []))
+
+            for profile in profiles:
+                score = profile_best_score(candidate, profile.get("vectors", []))
+                if score > best_score:
+                    best_score = score
+                    best_profile = profile
+
             if strict_expected:
-                if expected_score >= 0.6:
+                stronger_owner_found = (
+                    best_profile is not None
+                    and best_profile.get("userId") != expected_profile.get("userId")
+                    and best_score >= 0.84
+                    and best_score > expected_score + 0.04
+                )
+
+                if stronger_owner_found:
                     return jsonify(
                         {
-                            "matched": True,
-                            "userId": expected_profile["userId"],
-                            "name": expected_profile["name"],
-                            "email": expected_profile.get("email", ""),
+                            "matched": False,
                             "confidence": round(expected_score, 2),
+                            "message": "This face belongs to another registered account.",
+                            "ownerUserId": best_profile.get("userId"),
+                            "ownerEmail": best_profile.get("email", ""),
+                            "ownerName": best_profile.get("name", ""),
+                            "ownerRole": best_profile.get("role", ""),
+                            "ownerConfidence": round(best_score, 2),
                         }
                     )
+
+                if expected_score >= 0.84 and (
+                    best_profile is None
+                    or best_profile.get("userId") == expected_profile.get("userId")
+                    or expected_score >= best_score - 0.02
+                ):
+                    return jsonify(build_profile_response(expected_profile, expected_score))
+
                 return jsonify(
                     {
                         "matched": False,
                         "confidence": round(expected_score, 2),
-                        "message": "Current student face did not match strongly enough.",
+                        "message": "Face verification failed for this account.",
                     }
                 )
-            if expected_score >= 0.7:
-                return jsonify(
-                    {
-                        "matched": True,
-                        "userId": expected_profile["userId"],
-                        "name": expected_profile["name"],
-                        "email": expected_profile.get("email", ""),
-                        "confidence": round(expected_score, 2),
-                    }
-                )
+            if expected_score >= 0.86 and (
+                best_profile is None
+                or best_profile.get("userId") == expected_profile.get("userId")
+                or expected_score >= best_score - 0.02
+            ):
+                return jsonify(build_profile_response(expected_profile, expected_score))
 
-    for profile in profiles:
-        scores = [similarity(candidate, vector) for vector in profile.get("vectors", [])]
-        if scores:
-            score = max(scores)
+    if best_profile is None:
+        for profile in profiles:
+            score = profile_best_score(candidate, profile.get("vectors", []))
             if score > best_score:
                 best_score = score
                 best_profile = profile
 
-    if best_profile is None or best_score < 0.8:
+    if best_profile is None or best_score < 0.84:
         return jsonify({"matched": False, "confidence": round(best_score, 2), "message": "Unknown face"})
 
-    return jsonify(
-        {
-            "matched": True,
-            "userId": best_profile["userId"],
-            "name": best_profile["name"],
-            "email": best_profile.get("email", ""),
-            "confidence": round(best_score, 2),
-        }
-    )
+    return jsonify(build_profile_response(best_profile, best_score))
 
 
 @app.post("/analyze-engagement")

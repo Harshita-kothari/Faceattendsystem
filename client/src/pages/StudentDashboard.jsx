@@ -1437,9 +1437,9 @@ export function StudentDashboard() {
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <p className="text-lg font-semibold">Attendance history</p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <input
                 type="month"
                 className="field px-4 py-3"
@@ -1451,7 +1451,87 @@ export function StudentDashboard() {
               </button>
             </div>
           </div>
-          <div className="mt-4 overflow-x-auto rounded-[1.5rem] border border-slate-200 dark:border-slate-800">
+          <div className="mt-4 space-y-4 md:hidden">
+            {records.map((record) => (
+              <div
+                key={`${record.id}-mobile`}
+                className="rounded-[1.35rem] border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{record.date}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{record.time}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                    record.status === 'present'
+                      ? 'bg-emerald-500/10 text-emerald-500'
+                      : 'bg-rose-500/10 text-rose-500'
+                  }`}>
+                    {record.status}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-slate-900/80">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Confidence</p>
+                    <p className="mt-1 text-sm font-medium">{Math.round((record.confidence || 0) * 100)}%</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-slate-900/80">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Security</p>
+                    {record.suspicious ? (
+                      <p className="mt-1 text-sm font-medium text-rose-500">Suspicious</p>
+                    ) : (
+                      <p className="mt-1 text-sm font-medium text-emerald-500">Clean</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Engagement</p>
+                    <p className="mt-1 text-sm font-medium capitalize">
+                      {record.engagementScore || 0}% · {record.emotionState || 'attentive'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Reason</p>
+                    <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                      {record.justification?.reason || record.absentReason || '-'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">AI review</p>
+                    <div className="mt-2">
+                      {record.justification ? (
+                        <div className="space-y-1">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium capitalize ${
+                            record.justification.aiLabel === 'genuine'
+                              ? 'bg-emerald-500/10 text-emerald-500'
+                              : record.justification.aiLabel === 'fake'
+                                ? 'bg-rose-500/10 text-rose-500'
+                                : 'bg-amber-500/10 text-amber-500'
+                          }`}>
+                            {record.justification.aiLabel}
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Trust {record.justification.trustScore || student?.honestyScore || 80}
+                          </p>
+                        </div>
+                      ) : record.status === 'absent' ? (
+                        <span className="inline-flex rounded-full bg-slate-500/10 px-3 py-1 text-xs font-medium text-slate-500">Pending</span>
+                      ) : (
+                        <span className="text-sm text-slate-500 dark:text-slate-400">-</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 hidden overflow-x-auto rounded-[1.5rem] border border-slate-200 dark:border-slate-800 md:block">
             <table className="min-w-[820px] w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-900">
                 <tr>
@@ -1506,7 +1586,7 @@ export function StudentDashboard() {
               </tbody>
             </table>
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-stretch sm:justify-end">
             <button onClick={downloadAttendanceHistoryPdf} className="action-primary">
               Download Attendance History PDF
             </button>

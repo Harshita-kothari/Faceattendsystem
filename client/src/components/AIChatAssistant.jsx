@@ -202,7 +202,7 @@ export function AIChatAssistant({ role = 'student' }) {
           </div>
         </div>
 
-        <div className="mt-5 flex h-[28rem] flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+        <div className="mt-5 flex h-[24rem] flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-3 sm:h-[28rem] sm:p-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex-1 space-y-3 overflow-y-auto pr-2">
             {messages.map((message, index) => {
               const isAssistant = message.role === 'assistant'
@@ -230,7 +230,7 @@ export function AIChatAssistant({ role = 'student' }) {
             ) : null}
           </div>
 
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input
               className="field w-full"
               placeholder={copy.placeholder}
@@ -243,7 +243,7 @@ export function AIChatAssistant({ role = 'student' }) {
                 }
               }}
             />
-            <button type="button" onClick={() => sendMessage()} className="action-primary shrink-0" disabled={loading}>
+            <button type="button" onClick={() => sendMessage()} className="action-primary shrink-0 sm:w-auto" disabled={loading}>
               <Send size={16} />
               Send
             </button>

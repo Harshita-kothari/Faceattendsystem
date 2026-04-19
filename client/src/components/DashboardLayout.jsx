@@ -101,7 +101,7 @@ export function DashboardLayout({ sidebar, title, subtitle, children }) {
       </AnimatePresence>
 
       <motion.div
-        className="mx-auto flex max-w-7xl gap-6 px-4 py-6 lg:px-8"
+        className="mx-auto flex max-w-7xl gap-4 px-3 py-4 sm:px-4 sm:py-6 lg:gap-6 lg:px-8"
         variants={stagger}
         initial="hidden"
         animate="show"
@@ -167,34 +167,34 @@ export function DashboardLayout({ sidebar, title, subtitle, children }) {
             </div>
           </motion.div>
 
-          <motion.header variants={rise} className="glass-panel flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <motion.header variants={rise} className="glass-panel flex flex-col gap-4 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Operations dashboard</p>
               <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">{title}</h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-950">
+              <div className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 sm:min-w-0 sm:flex-none">
                 <Clock3 size={16} />
                 {time}
               </div>
               <button
                 onClick={toggleAlerts}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
+                className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 sm:min-w-0 sm:flex-none"
               >
                 <Bell size={16} />
                 {alertsEnabled ? 'Alerts on' : 'Alerts off'}
               </button>
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
+                className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 sm:min-w-0 sm:flex-none"
               >
                 {theme === 'dark' ? <SunMedium size={16} /> : <MoonStar size={16} />}
                 {theme === 'dark' ? 'Light' : 'Dark'}
               </button>
               <button
                 onClick={logout}
-                className="inline-flex items-center gap-2 rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white sm:w-auto"
               >
                 <LogOut size={16} />
                 Logout

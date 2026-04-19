@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { FaceCapture } from '../components/FaceCapture'
 import { useAuth } from '../context/AuthContext'
+import { getPhoneValidationMessage, isValidPhoneNumber, normalizePhoneInput } from '../lib/validation'
 
 export function SignupPage() {
   const { signup, loading } = useAuth()
@@ -40,6 +41,12 @@ export function SignupPage() {
       toast.error(message)
       return
     }
+    if (!isValidPhoneNumber(form.parentPhone)) {
+      const message = getPhoneValidationMessage('Parent phone')
+      setSubmitError(message)
+      toast.error(message)
+      return
+    }
 
     try {
       const result = await signup({ ...form, faceImages })
@@ -50,7 +57,7 @@ export function SignupPage() {
       }
       navigate(result.user.role === 'teacher' ? '/teacher' : '/student/profile')
     } catch (error) {
-      const message = error.response?.data?.message || 'Signup failed'
+      const message = error.response?.data?.message || error.friendlyMessage || 'Signup failed'
       const detail = error.response?.data?.detail
       const ownerEmail = error.response?.data?.ownerEmail
       const fullMessage = ownerEmail
@@ -71,7 +78,21 @@ export function SignupPage() {
     <div className="min-h-screen bg-auth px-4 py-8 text-slate-900 dark:text-white">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-6xl">
         <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="glass-panel p-6 sm:p-8">
+          <div className="glass-panel p-4 sm:p-6 lg:p-8">
+            <div className="mb-4 rounded-[1.5rem] border border-white/10 bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/20 lg:hidden">
+              <p className="text-[11px] uppercase tracking-[0.35em] text-cyan-200/70">Student-ready onboarding</p>
+              <h1 className="mt-3 text-3xl font-semibold leading-tight">Attendance Management System</h1>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                Create a secure student account with face registration, parent alerts, and smooth access on both desktop and mobile.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {['Face dataset', 'Parent alerts', 'Student dashboard'].map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-200">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Create account</p>
             <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Professional onboarding</h2>
             <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
@@ -110,7 +131,7 @@ export function SignupPage() {
                 </div>
               ))}
             </div>
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-[1.75rem] border border-slate-200/80 bg-white/60 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/40">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-white/60 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/40 sm:rounded-[1.75rem] sm:p-5">
               {submitError ? (
                 <div className="rounded-[1.25rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
                   {submitError}
@@ -129,7 +150,7 @@ export function SignupPage() {
               <input className="field" placeholder="Department" value={form.department} onChange={(event) => setForm({ ...form, department: event.target.value })} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <input className="field" placeholder="Parent name" value={form.parentName} onChange={(event) => setForm({ ...form, parentName: event.target.value })} />
-                <input className="field" placeholder="Parent phone" value={form.parentPhone} onChange={(event) => setForm({ ...form, parentPhone: event.target.value })} />
+                <input className="field" placeholder="Parent phone" inputMode="tel" value={form.parentPhone} onChange={(event) => setForm({ ...form, parentPhone: normalizePhoneInput(event.target.value) })} />
                 <input className="field sm:col-span-2" placeholder="Parent email" type="email" value={form.parentEmail} onChange={(event) => setForm({ ...form, parentEmail: event.target.value })} />
               </div>
               <button className="action-primary w-full justify-center" disabled={loading}>

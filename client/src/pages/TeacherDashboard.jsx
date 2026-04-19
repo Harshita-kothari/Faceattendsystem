@@ -10,6 +10,7 @@ import { AIChatAssistant } from '../components/AIChatAssistant'
 import { DashboardLayout } from '../components/DashboardLayout'
 import { FaceCapture } from '../components/FaceCapture'
 import { useTheme } from '../context/ThemeContext'
+import { getPhoneValidationMessage, isValidPhoneNumber, normalizePhoneInput } from '../lib/validation'
 
 const sidebar = [
   { to: '/teacher', label: 'Dashboard', icon: LayoutDashboard },
@@ -156,6 +157,12 @@ export function TeacherDashboard() {
 
   async function createStudent(event) {
     event.preventDefault()
+    if (!isValidPhoneNumber(newStudent.parentPhone)) {
+      if (alertsEnabled) {
+        toast.error(getPhoneValidationMessage('Parent phone'))
+      }
+      return
+    }
     try {
       await api.post('/api/students', { ...newStudent, faceImages })
       if (alertsEnabled) {
@@ -745,7 +752,7 @@ export function TeacherDashboard() {
               </div>
             </div>
             <div className="mt-5 overflow-x-auto rounded-[1.5rem] border border-slate-200 dark:border-slate-800">
-              <table className="min-w-full table-fixed text-sm">
+              <table className="min-w-[760px] table-fixed text-sm">
                 <colgroup>
                   <col className="w-[36%]" />
                   <col className="w-[18%]" />
@@ -949,7 +956,7 @@ export function TeacherDashboard() {
             <input className="field" placeholder="Department" value={newStudent.department} onChange={(event) => setNewStudent({ ...newStudent, department: event.target.value })} />
             <input className="field" placeholder="Parent name" value={newStudent.parentName} onChange={(event) => setNewStudent({ ...newStudent, parentName: event.target.value })} />
             <input className="field" placeholder="Parent email" type="email" value={newStudent.parentEmail} onChange={(event) => setNewStudent({ ...newStudent, parentEmail: event.target.value })} />
-            <input className="field" placeholder="Parent phone" value={newStudent.parentPhone} onChange={(event) => setNewStudent({ ...newStudent, parentPhone: event.target.value })} />
+            <input className="field" placeholder="Parent phone" inputMode="tel" value={newStudent.parentPhone} onChange={(event) => setNewStudent({ ...newStudent, parentPhone: normalizePhoneInput(event.target.value) })} />
             <FaceCapture onFramesChange={setFaceImages} maxFrames={5} label="Student face dataset" />
             <button className="action-primary w-full justify-center">Add student to dataset</button>
           </form>

@@ -113,6 +113,18 @@ function createId(prefix = 'id') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
+function normalizePhone(value = '') {
+  return String(value || '').trim()
+}
+
+function isValidPhone(value = '') {
+  const trimmed = normalizePhone(value)
+  if (!trimmed) return true
+  if (!/^\+?[\d\s\-()]+$/.test(trimmed)) return false
+  const digits = trimmed.replace(/\D/g, '')
+  return digits.length >= 10 && digits.length <= 15
+}
+
 function signToken(user) {
   return jwt.sign({ userId: user.id, role: user.role }, env.jwtSecret, { expiresIn: '7d' })
 }
@@ -1941,6 +1953,9 @@ app.post('/api/auth/signup', async (req, res) => {
     if (role !== 'student') {
       return res.status(400).json({ message: 'Only student self-signup is allowed. Teacher accounts are created by admin only.' })
     }
+    if (!isValidPhone(parentPhone)) {
+      return res.status(400).json({ message: 'Parent phone must contain 10 to 15 digits.' })
+    }
 
     const db = readDb()
     const exists = db.users.find((user) => user.email === email.toLowerCase())
@@ -1965,7 +1980,7 @@ app.post('/api/auth/signup', async (req, res) => {
         ? {
             name: parentName || '',
             email: parentEmail?.toLowerCase() || '',
-            phone: parentPhone || '',
+            phone: normalizePhone(parentPhone),
           }
         : null,
       createdAt: new Date().toISOString(),
@@ -2126,6 +2141,9 @@ app.post('/api/auth/login', async (req, res) => {
   if (role && user.role !== role) return res.status(401).json({ message: 'Selected role does not match this account.' })
   const ok = await bcrypt.compare(password, user.password)
   if (!ok) return res.status(401).json({ message: 'Invalid credentials.' })
+  if (role === 'student' && !isValidPhone(parentPhone)) {
+    return res.status(400).json({ message: 'Parent phone must contain 10 to 15 digits.' })
+  }
 
   if (!otpCode || !otpChallengeId) {
     const challenge = await createOtpChallenge(db, {
@@ -2191,7 +2209,7 @@ app.post('/api/auth/login', async (req, res) => {
     user.parentContact = {
       name: parentName || user.parentContact?.name || '',
       email: parentEmail?.toLowerCase() || user.parentContact?.email || '',
-      phone: parentPhone || user.parentContact?.phone || '',
+      phone: normalizePhone(parentPhone) || user.parentContact?.phone || '',
     }
     writeDb(db)
   }
@@ -2278,6 +2296,9 @@ app.get('/api/students/:id/summary', authMiddleware, roleMiddleware('teacher', '
 app.post('/api/students', authMiddleware, roleMiddleware('teacher', 'admin'), async (req, res) => {
   try {
     const { name, email, password, department, faceImages = [], parentName, parentEmail, parentPhone } = req.body
+    if (!isValidPhone(parentPhone)) {
+      return res.status(400).json({ message: 'Parent phone must contain 10 to 15 digits.' })
+    }
     const db = readDb()
     if (db.users.some((user) => user.email === email.toLowerCase())) {
       return res.status(409).json({ message: 'Student email already exists.' })
@@ -2300,7 +2321,7 @@ app.post('/api/students', authMiddleware, roleMiddleware('teacher', 'admin'), as
       parentContact: {
         name: parentName || '',
         email: parentEmail?.toLowerCase() || '',
-        phone: parentPhone || '',
+        phone: normalizePhone(parentPhone),
       },
       createdAt: new Date().toISOString(),
     }
@@ -2738,7 +2759,13 @@ app.post('/api/teacher-attendance/scan', authMiddleware, roleMiddleware('teacher
     }
 
     if (!recognitionData?.matched || recognitionData?.userId !== teacher.id) {
-      return res.status(403).json({ matched: false, message: 'Face verification failed for this teacher account.' })
+      return res.status(403).json({
+        matched: false,
+        message: recognitionData?.message || 'Face verification failed for this teacher account.',
+        ownerEmail: recognitionData?.ownerEmail || '',
+        ownerName: recognitionData?.ownerName || '',
+        ownerRole: recognitionData?.ownerRole || '',
+      })
     }
 
     const now = attendanceNow

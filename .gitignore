@@ -18,6 +18,7 @@ client/dist/
 client-dev.log
 face-api.log
 server-restart.log
+mobile-home-preview.png
 
 student-token.txt
 teacher-token.txt
@@ -29,6 +30,8 @@ client/.env
 client/.gitignore
 .vercel/
 client/.vercel/
+client/android/.idea/
+client/android/.gradle/
 
 server/data/*.json
 face-api/data/*.json

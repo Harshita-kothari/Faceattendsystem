@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import api from '../lib/api'
 import { DashboardLayout } from '../components/DashboardLayout'
 import { useTheme } from '../context/ThemeContext'
+import { getPhoneValidationMessage, isValidPhoneNumber, normalizePhoneInput } from '../lib/validation'
 
 const sidebar = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -127,6 +128,10 @@ export function AdminDashboard() {
 
   async function createStudent(event) {
     event.preventDefault()
+    if (!isValidPhoneNumber(studentForm.parentPhone)) {
+      if (alertsEnabled) toast.error(getPhoneValidationMessage('Parent phone'))
+      return
+    }
     try {
       setCreatingStudent(true)
       const { data } = await api.post('/api/students', { ...studentForm, faceImages: [] })
@@ -322,8 +327,8 @@ export function AdminDashboard() {
               </select>
             </div>
 
-            <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200 dark:border-slate-800">
-              <table className="w-full text-sm">
+            <div className="mt-5 overflow-x-auto rounded-[1.5rem] border border-slate-200 dark:border-slate-800">
+              <table className="min-w-[760px] w-full text-sm">
                 <thead className="bg-slate-50 dark:bg-slate-900">
                   <tr>
                     <th className="px-4 py-3 text-left">Teacher</th>
@@ -390,7 +395,7 @@ export function AdminDashboard() {
                 <input className="field" placeholder="Department" value={studentForm.department} onChange={(event) => setStudentForm((current) => ({ ...current, department: event.target.value }))} />
                 <input className="field" placeholder="Parent name" value={studentForm.parentName} onChange={(event) => setStudentForm((current) => ({ ...current, parentName: event.target.value }))} />
                 <input className="field" placeholder="Parent email" type="email" value={studentForm.parentEmail} onChange={(event) => setStudentForm((current) => ({ ...current, parentEmail: event.target.value }))} />
-                <input className="field md:col-span-2" placeholder="Parent phone" value={studentForm.parentPhone} onChange={(event) => setStudentForm((current) => ({ ...current, parentPhone: event.target.value }))} />
+                <input className="field md:col-span-2" placeholder="Parent phone" inputMode="tel" value={studentForm.parentPhone} onChange={(event) => setStudentForm((current) => ({ ...current, parentPhone: normalizePhoneInput(event.target.value) }))} />
               </div>
               <div className="mt-4">
                 <button className="action-primary" disabled={creatingStudent}>{creatingStudent ? 'Creating student...' : 'Add student account'}</button>
