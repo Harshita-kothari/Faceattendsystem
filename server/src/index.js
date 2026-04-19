@@ -1540,6 +1540,22 @@ async function createOtpChallenge(db, { user, purpose, email, meta = {} }) {
   return challenge
 }
 
+function ensureOtpDelivered(challenge, fallbackMessage) {
+  if (challenge?.deliveryStatus === 'sent') {
+    return null
+  }
+
+  const detail = challenge?.deliveryDetail || fallbackMessage
+  return {
+    status: 502,
+    body: {
+      message: fallbackMessage,
+      detail,
+      deliveryStatus: challenge?.deliveryStatus || 'failed',
+    },
+  }
+}
+
 function verifyOtpChallenge(db, { userId, challengeId, otpCode, purpose }) {
   cleanupOtpChallenges(db)
   const challenge = (db.otpChallenges || []).find(
@@ -2153,6 +2169,10 @@ app.post('/api/auth/login', async (req, res) => {
       meta: { role, parentEmail, parentName, parentPhone },
     })
     writeDb(db)
+    const deliveryError = ensureOtpDelivered(challenge, 'Unable to send login OTP email right now.')
+    if (deliveryError) {
+      return res.status(deliveryError.status).json(deliveryError.body)
+    }
     return res.json({
       otpRequired: true,
       challengeId: challenge.id,
@@ -2584,6 +2604,10 @@ app.post('/api/attendance/request-otp', authMiddleware, roleMiddleware('student'
       email: student.email,
     })
     writeDb(db)
+    const deliveryError = ensureOtpDelivered(challenge, 'Unable to send attendance OTP email right now.')
+    if (deliveryError) {
+      return res.status(deliveryError.status).json(deliveryError.body)
+    }
     return res.json({
       success: true,
       challengeId: challenge.id,

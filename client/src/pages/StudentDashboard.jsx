@@ -316,10 +316,12 @@ export function StudentDashboard() {
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Attendance OTP send failed.'
+      const detail = error.response?.data?.detail
+      const fullMessage = detail && detail !== message ? `${message} ${detail}` : message
       setAttendanceOtpStatus('')
-      setScanError(message)
+      setScanError(fullMessage)
       if (alertsEnabled) {
-        toast.error(message)
+        toast.error(fullMessage)
       }
     }
   }
