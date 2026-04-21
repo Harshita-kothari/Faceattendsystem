@@ -9,7 +9,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = Path(os.getenv("FACE_DATA_DIR", str(BASE_DIR / "data"))).resolve()
 ENCODINGS_FILE = DATA_DIR / "face_profiles.json"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 

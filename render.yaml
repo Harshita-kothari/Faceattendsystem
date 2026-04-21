@@ -12,6 +12,8 @@ services:
         value: 20
       - key: JWT_SECRET
         generateValue: true
+      - key: DATA_DIR
+        sync: false
       - key: CLIENT_URL
         sync: false
       - key: FACE_API_URL
@@ -50,3 +52,6 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     autoDeploy: true
+    envVars:
+      - key: FACE_DATA_DIR
+        sync: false

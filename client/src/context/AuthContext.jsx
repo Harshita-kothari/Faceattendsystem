@@ -34,9 +34,11 @@ export function AuthProvider({ children }) {
         if (!cancelled) {
           setUser(data.user)
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          setUser(null)
+          if (!isTransientAuthError(error)) {
+            setUser(null)
+          }
         }
       } finally {
         if (!cancelled) {
