@@ -239,10 +239,34 @@ export function LoginPage() {
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Control teacher attendance, admin analytics, and institution access.</p>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-white/60 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/40 sm:rounded-[1.75rem] sm:p-5">
-              <input className="field" placeholder="Email address" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+            <form autoComplete="off" onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-white/60 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/40 sm:rounded-[1.75rem] sm:p-5">
+              <input
+                className="field"
+                placeholder="Email address"
+                type="email"
+                name="auth_email"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
+                required
+                value={form.email}
+                onChange={(event) => setForm({ ...form, email: event.target.value })}
+              />
               <div className="field flex items-center gap-3">
-                <input className="w-full bg-transparent outline-none" placeholder="Password" type={showPassword ? 'text' : 'password'} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+                <input
+                  className="w-full bg-transparent outline-none"
+                  placeholder="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="auth_password"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  required
+                  value={form.password}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                />
                 <button type="button" onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
               </div>
               {selectedRole === 'student' ? (

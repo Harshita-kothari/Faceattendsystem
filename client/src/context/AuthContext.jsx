@@ -68,11 +68,11 @@ export function AuthProvider({ children }) {
       let data
       let lastError
 
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
         try {
           if (attempt > 1) {
             await api.get('/health').catch(() => {})
-            await wait(attempt * 1200)
+            await wait(attempt * 400)
           }
           const response = await api.post('/api/auth/login', payload)
           data = response.data
@@ -109,11 +109,11 @@ export function AuthProvider({ children }) {
       let data
       let lastError
 
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
         try {
           if (attempt > 1) {
             await api.get('/health').catch(() => {})
-            await wait(attempt * 1200)
+            await wait(attempt * 400)
           }
           const response = await api.post('/api/auth/signup', payload)
           data = response.data

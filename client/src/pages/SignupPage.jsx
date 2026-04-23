@@ -35,12 +35,6 @@ export function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     setSubmitError('')
-    if (faceImages.length < 5) {
-      const message = 'Capture at least 5 face samples to complete student signup.'
-      setSubmitError(message)
-      toast.error(message)
-      return
-    }
     if (!isValidPhoneNumber(form.parentPhone)) {
       const message = getPhoneValidationMessage('Parent phone')
       setSubmitError(message)
@@ -49,8 +43,8 @@ export function SignupPage() {
     }
 
     try {
-      const result = await signup({ ...form, faceImages })
-      toast.success('Account created successfully')
+      const result = await signup({ ...form, faceImages: [] })
+      toast.success('Account created successfully. Complete face setup from your profile.')
       if (result.warningMessage) {
         setSubmitError(result.warningMessage)
         toast.error(result.warningMessage)
@@ -111,7 +105,7 @@ export function SignupPage() {
                   <GraduationCap size={18} />
                   <span className="font-medium">Student Signup</span>
                 </div>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Includes face registration and attendance profile.</p>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Fast account creation with face setup completed after signup.</p>
               </button>
               <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-950">
                 <p className="font-medium">Teacher accounts are admin-only</p>
@@ -120,7 +114,7 @@ export function SignupPage() {
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               {[
-                [ShieldCheck, 'Secure signup', 'Student identity is linked with face registration.'],
+                [ShieldCheck, 'Fast signup', 'The account is created first, then face setup is completed from the profile page.'],
                 [Sparkles, 'Parent alerts', 'Parent contact can receive attendance updates.'],
                 [GraduationCap, 'Student-ready', 'The account opens the student dashboard after signup.'],
               ].map(([Icon, title, text]) => (
@@ -163,14 +157,14 @@ export function SignupPage() {
           </div>
 
           <div className="space-y-6">
-            <FaceCapture onFramesChange={setFaceImages} maxFrames={6} label="Student face registration" />
+            <FaceCapture onFramesChange={setFaceImages} maxFrames={6} label="Student face registration (optional during signup)" />
             <div className="card-panel p-5">
-              <p className="text-sm font-semibold">Why multiple images?</p>
+              <p className="text-sm font-semibold">Why is face setup optional here?</p>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Capturing 5 to 10 face samples improves accuracy across lighting, angle, and motion changes.
+                Mobile signup is faster if the account is created first. You can complete face registration from the profile page right after signup.
               </p>
               <div className="mt-4 rounded-[1.25rem] border border-slate-200/80 bg-white/60 p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
-                On mobile, take samples in steady light and keep the face centered. If signup still fails, the screen will now show the exact reason instead of a generic failed message.
+                If you want, you can still capture sample images here, but signup no longer waits on face processing before creating the account.
               </div>
             </div>
           </div>
