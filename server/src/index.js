@@ -2278,7 +2278,7 @@ app.post('/api/auth/login', async (req, res) => {
       otpRequired: true,
       challengeId: challenge.id,
       deliveryStatus: challenge.deliveryStatus,
-      faceRequired: Boolean(user.role === 'student' && user.faceRegistered && user.faceSamples?.length),
+      faceRequired: Boolean(user.role === 'student'),
       message: `OTP sent to ${challenge.email}.`,
     })
   }
@@ -2294,31 +2294,39 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(401).json({ message: verified.message })
   }
 
-  if (user.role === 'student' && user.faceRegistered && user.faceSamples?.length) {
+  if (user.role === 'student') {
     if (!faceImage) {
       writeDb(db)
       return res.status(403).json({ message: 'Face verification is required to complete student login.' })
     }
 
     try {
-      await syncFaceProfile(user, db)
-      const [generalRecognition, strictRecognition] = await Promise.all([
-        axios.post(`${env.faceApiUrl}/recognize-face`, { image: faceImage }),
-        axios.post(`${env.faceApiUrl}/recognize-face`, {
-          image: faceImage,
-          expectedUserId: user.id,
-          expectedEmail: user.email,
-          strictExpected: true,
-        }),
-      ])
+      if (user.faceRegistered && user.faceSamples?.length) {
+        await syncFaceProfile(user, db)
+        const [generalRecognition, strictRecognition] = await Promise.all([
+          axios.post(`${env.faceApiUrl}/recognize-face`, { image: faceImage }),
+          axios.post(`${env.faceApiUrl}/recognize-face`, {
+            image: faceImage,
+            expectedUserId: user.id,
+            expectedEmail: user.email,
+            strictExpected: true,
+          }),
+        ])
 
-      if (!strictRecognition.data?.matched || strictRecognition.data?.userId !== user.id) {
+        if (!strictRecognition.data?.matched || strictRecognition.data?.userId !== user.id) {
+          if (generalRecognition.data?.matched && generalRecognition.data?.userId && generalRecognition.data.userId !== user.id) {
+            writeDb(db)
+            return res.status(403).json({ message: 'Login blocked. This face belongs to another registered student account.' })
+          }
+          writeDb(db)
+          return res.status(403).json({ message: 'Face verification failed for this student account.' })
+        }
+      } else {
+        const generalRecognition = await axios.post(`${env.faceApiUrl}/recognize-face`, { image: faceImage })
         if (generalRecognition.data?.matched && generalRecognition.data?.userId && generalRecognition.data.userId !== user.id) {
           writeDb(db)
           return res.status(403).json({ message: 'Login blocked. This face belongs to another registered student account.' })
         }
-        writeDb(db)
-        return res.status(403).json({ message: 'Face verification failed for this student account.' })
       }
     } catch (error) {
       writeDb(db)
