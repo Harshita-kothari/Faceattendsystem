@@ -142,12 +142,24 @@ def profile_match_stats(vectors, saved_vectors):
             "strong_match_count": 0,
         }
 
-    strong_match_count = sum(1 for score in candidate_best_scores if score >= 0.86)
+    strong_match_count = sum(1 for score in candidate_best_scores if score >= 0.82)
     return {
         "best_score": max(candidate_best_scores),
         "average_best_score": float(sum(candidate_best_scores) / len(candidate_best_scores)),
         "strong_match_count": strong_match_count,
     }
+
+
+def is_duplicate_face(stats, sample_count):
+    required_strong_matches = max(1, min(3, sample_count))
+    return (
+        stats["best_score"] >= 0.8
+        or stats["average_best_score"] >= 0.74
+        or (
+            stats["average_best_score"] >= 0.7
+            and stats["strong_match_count"] >= required_strong_matches
+        )
+    )
 
 
 def find_face_owner(vectors, profiles, exclude_user_id=None, exclude_email=""):
@@ -291,18 +303,7 @@ def register_face():
 
     existing_profiles = read_profiles()
     owner_profile, owner_stats = find_face_owner(vectors, existing_profiles, user_id, email.lower())
-    minimum_strong_matches = max(1, min(2, len(vectors)))
-    duplicate_detected = (
-        owner_profile is not None
-        and (
-            owner_stats["best_score"] >= 0.84
-            or owner_stats["average_best_score"] >= 0.8
-            or (
-                owner_stats["average_best_score"] >= 0.76
-                and owner_stats["strong_match_count"] >= minimum_strong_matches
-            )
-        )
-    )
+    duplicate_detected = owner_profile is not None and is_duplicate_face(owner_stats, len(vectors))
     if duplicate_detected:
         return (
             jsonify(
@@ -379,8 +380,8 @@ def recognize_face():
                 stronger_owner_found = (
                     best_profile is not None
                     and best_profile.get("userId") != expected_profile.get("userId")
-                    and best_score >= 0.84
-                    and best_score > expected_score + 0.04
+                    and best_score >= 0.8
+                    and best_score > expected_score + 0.03
                 )
 
                 if stronger_owner_found:
@@ -397,7 +398,7 @@ def recognize_face():
                         }
                     )
 
-                if expected_score >= 0.84 and (
+                if expected_score >= 0.8 and (
                     best_profile is None
                     or best_profile.get("userId") == expected_profile.get("userId")
                     or expected_score >= best_score - 0.02
@@ -411,7 +412,7 @@ def recognize_face():
                         "message": "Face verification failed for this account.",
                     }
                 )
-            if expected_score >= 0.86 and (
+            if expected_score >= 0.82 and (
                 best_profile is None
                 or best_profile.get("userId") == expected_profile.get("userId")
                 or expected_score >= best_score - 0.02
@@ -425,7 +426,7 @@ def recognize_face():
                 best_score = score
                 best_profile = profile
 
-    if best_profile is None or best_score < 0.84:
+    if best_profile is None or best_score < 0.8:
         return jsonify({"matched": False, "confidence": round(best_score, 2), "message": "Unknown face"})
 
     return jsonify(build_profile_response(best_profile, best_score))
