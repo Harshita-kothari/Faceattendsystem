@@ -4,7 +4,7 @@
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://69e0ba93f0d0725a932d3f80--faceattendancemanager.netlify.app/",
+    "url": "https://faceattendancemobdeskfriendly.netlify.app/",
     "cleartext": false,
     "androidScheme": "https"
   }
