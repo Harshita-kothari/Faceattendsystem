@@ -2070,6 +2070,9 @@ app.post('/api/auth/signup', async (req, res) => {
     if (role !== 'student') {
       return res.status(400).json({ message: 'Only student self-signup is allowed. Teacher accounts are created by admin only.' })
     }
+    if (!Array.isArray(faceImages) || faceImages.length < 5) {
+      return res.status(400).json({ message: 'Capture at least 5 face samples before creating the account.' })
+    }
     if (!isValidPhone(parentPhone)) {
       return res.status(400).json({ message: 'Parent phone must contain 10 to 15 digits.' })
     }
@@ -2103,26 +2106,18 @@ app.post('/api/auth/signup', async (req, res) => {
       createdAt: new Date().toISOString(),
     }
 
-    let warningMessage = ''
+    const response = await registerFaceProfileWithRetry({
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      images: faceImages,
+    })
+    user.faceRegistered = Boolean(response.data?.success)
+    user.faceSamples = faceImages.map((imageUrl) => ({ imageUrl, capturedAt: new Date().toISOString() }))
 
-    if (role === 'student' && faceImages.length) {
-      try {
-        const response = await registerFaceProfileWithRetry({
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          images: faceImages,
-        })
-        user.faceRegistered = Boolean(response.data?.success)
-        user.faceSamples = faceImages.map((imageUrl) => ({ imageUrl, capturedAt: new Date().toISOString() }))
-      } catch (error) {
-        const status = error.response?.status
-        if (status && status < 500) {
-          throw error
-        }
-        warningMessage = 'Account created, but face registration needs one more try from your student profile.'
-      }
+    if (!user.faceRegistered) {
+      return res.status(400).json({ message: 'Face registration did not complete. Please capture clear samples and try again.' })
     }
 
     db.users.push(user)
@@ -2131,8 +2126,8 @@ app.post('/api/auth/signup', async (req, res) => {
     return res.status(201).json({
       token,
       user: sanitizeUser(user),
-      warningMessage,
-      faceRegistrationDeferred: Boolean(warningMessage),
+      warningMessage: '',
+      faceRegistrationDeferred: false,
     })
   } catch (error) {
     const status = error.response?.status || 500
@@ -2150,8 +2145,8 @@ app.post('/api/auth/signup', async (req, res) => {
 app.post('/api/students/me/register-face', authMiddleware, roleMiddleware('student'), async (req, res) => {
   try {
     const { faceImages = [] } = req.body
-    if (!Array.isArray(faceImages) || faceImages.length < 1) {
-      return res.status(400).json({ message: 'At least one face image is required.' })
+    if (!Array.isArray(faceImages) || faceImages.length < 5) {
+      return res.status(400).json({ message: 'Capture at least 5 face images before registering the student face.' })
     }
 
     const db = readDb()
